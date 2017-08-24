@@ -42,7 +42,7 @@ export default class Equalizer extends Component {
       node.style.minHeight = ''
 
       // http://ejohn.org/blog/getboundingclientrect-is-awesome/
-      const {top: elOffsetTop, height: elHeight} = node.getBoundingClientRect()
+      const {top: elOffsetTop, height: elHeight, width: elWidth} = node.getBoundingClientRect()
 
       if(i === 0) {
         lastElTopOffset = elOffsetTop
@@ -54,13 +54,16 @@ export default class Equalizer extends Component {
         lastElTopOffset = elOffsetTop
       }
 
-      groups[row].push([node, elHeight])
+      groups[row].push([node, elHeight, elWidth])
     }
 
     for (let j = 0; j < groups.length; j++) {
       const heights = groups[j].map((item) => item[1])
       const max     = Math.max.apply(null, heights)
       groups[j].push(max)
+      const widths = groups[j].slice(0, -1).map((item) => item[2])
+      const maxWidth     = Math.max.apply(null, widths)
+      groups[j].push(maxWidth)
     }
 
     return groups
@@ -79,10 +82,17 @@ export default class Equalizer extends Component {
       const heights  = this.constructor.getHeights(children, byRow)
 
       for (let row = 0; row < heights.length; row++) {
-        const max = heights[row][heights[row].length-1]
+        let max = heights[row][heights[row].length-2]
+        if (this.props.square) {
+          const maxWidth = heights[row][heights[row].length-1]
+          max = Math.max(max, maxWidth);
+        }
 
-        for (let i = 0; i < (heights[row].length - 1); i++) {
+        for (let i = 0; i < (heights[row].length - 2); i++) {
           heights[row][i][0].style[property] = max + 'px'
+          if (this.props.square) {
+            heights[row][i][0].style['width'] = max + 'px'
+          }
         }
       }
     }
@@ -102,7 +112,8 @@ Equalizer.defaultProps = {
   property: 'height',
   byRow:    true,
   enabled:  () => true,
-  nodes:    (component, node) => node.children
+  nodes:    (component, node) => node.children,
+  square:   false
 }
 
 Equalizer.propTypes = {
@@ -110,7 +121,8 @@ Equalizer.propTypes = {
   property: PropTypes.string,
   byRow:    PropTypes.bool,
   enabled:  PropTypes.func,
-  nodes:    PropTypes.func
+  nodes:    PropTypes.func,
+  square:   PropTypes.bool
 }
 
 // from: https://github.com/component/debounce
